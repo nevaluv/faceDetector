@@ -1,16 +1,39 @@
-# This is a sample Python script.
+import PySimpleGUI as sg
+import cv2
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+layout = [
+	[sg.Image(key = '-IMAGE-')],
+	[sg.Text('People in picture: 0', key = '-TEXT-', expand_x = True, justification = 'c')]
+]
 
+window = sg.Window('Face Detector', layout)
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+# get video
+video = cv2.VideoCapture(0)
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
+while True:
+	event, values = window.read(timeout = 0)
+	if event == sg.WIN_CLOSED:
+		break
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+	_, frame = video.read()
+	gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+	faces = face_cascade.detectMultiScale(
+		gray,
+		scaleFactor = 1.3,
+		minNeighbors = 7,
+		minSize =(30,30))
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+	# draw the rectangles
+	for (x, y, w, h) in faces:
+		cv2.rectangle(frame,(x,y),(x + w, y + h),(0,255,0),2)
+
+	# update the image
+	imgbytes = cv2.imencode('.png',frame)[1].tobytes()
+	window['-IMAGE-'].update(data = imgbytes)
+
+	# update the text
+	window['-TEXT-'].update(f'People in picture: {len(faces)}')
+
+window.close()
